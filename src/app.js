@@ -6,8 +6,8 @@
   const els = {
     categoryNav: $('#categoryNav'), questionList: $('#questionList'), detail: $('#questionDetail'), search: $('#searchInput'),
     activeLabel: $('#activeCategoryLabel'), count: $('#visibleCount'), total: $('#questionCount'), empty: $('#emptyState'),
-    progressLabel: $('#progressLabel'), progressBar: $('#progressBar'), onlyNew: $('#unansweredFilter'), femaleVoice: $('#femaleVoice'),
-    maleVoice: $('#maleVoice'), speechVolume: $('#speechVolume'), speechVolumeLabel: $('#speechVolumeLabel'),
+    progressLabel: $('#progressLabel'), progressBar: $('#progressBar'), onlyNew: $('#unansweredFilter'),
+    speechVolume: $('#speechVolume'), speechVolumeLabel: $('#speechVolumeLabel'),
     ambientVolume: $('#ambientVolume'), ambientVolumeLabel: $('#ambientVolumeLabel'), ambientToggle: $('#ambientToggle'),
     dock: $('#soundDock'), dockToggle: $('#dockToggle'), toast: $('#toast'), popover: $('#wordPopover'),
     popWord: $('#popoverWord'), popMeaning: $('#popoverMeaning'), popPronunciation: $('#popoverPronunciation')
@@ -20,6 +20,7 @@
   let toastTimer = 0;
   let voiceOptions = [];
   let ambient = null;
+  let currentAudio = null;
   let lastWord = '';
   let outsideClickHandler = null;
   try { done = new Set(JSON.parse(localStorage.getItem(STORAGE_DONE) || '[]')); } catch (_) { done = new Set(); }
@@ -579,32 +580,10 @@ GPS|نظام تحديد المواقع
     selected?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }
   function updateVoices() {
-    if (!('speechSynthesis' in window)) {
-      voiceOptions = [];
-      els.femaleVoice.innerHTML = '<option value="">غير مدعوم</option>';
-      els.maleVoice.innerHTML = '<option value="">غير مدعوم</option>';
-      return;
-    }
+    if (!('speechSynthesis' in window)) { voiceOptions = []; return; }
     const all = window.speechSynthesis.getVoices();
     voiceOptions = all.filter(voice => voice.localService === true && /^en([-_]|$)/i.test(voice.lang));
-    const makeOption = voice => `<option value="${escapeHtml(voice.name)}" data-uri="${escapeHtml(voice.voiceURI || voice.name)}">${escapeHtml(voice.name)} · ${escapeHtml(voice.lang)}</option>`;
-    const femaleNames = /female|woman|samantha|victoria|karen|moira|susan|salli|ava|jenny|aria|emma|amy|zoe|tessa|serena|libby|sonia|kate|fiona|olivia|siri.*female|google uk english female|zira/i;
-    const maleNames = /male|man|daniel|george|oliver|ryan|guy|david|mark|james|alex|fred|tom|arthur|lee|rishi|google uk english male|siri.*male/i;
-    const preferredFemale = voiceOptions.filter(v => femaleNames.test(`${v.name} ${v.voiceURI}`));
-    const preferredMale = voiceOptions.filter(v => maleNames.test(`${v.name} ${v.voiceURI}`));
-    const enGb = list => list.find(v => /^en[-_]gb$/i.test(v.lang)) || list.find(v => /^en[-_]us$/i.test(v.lang)) || list[0];
-    const chosenFemale = enGb(preferredFemale.length ? preferredFemale : voiceOptions);
-    const chosenMale = enGb(preferredMale.length ? preferredMale : voiceOptions.filter(v => v !== chosenFemale));
-    const fill = (element, selected) => {
-      const previous = element.value;
-      element.innerHTML = voiceOptions.length ? voiceOptions.map(makeOption).join('') : '<option value="">لا يوجد صوت English محلي</option>';
-      const match = voiceOptions.find(v => v.name === previous) || selected;
-      if (match) element.value = match.name;
-    };
-    fill(els.femaleVoice, chosenFemale);
-    fill(els.maleVoice, chosenMale || chosenFemale);
   }
-  function voiceFrom(select) { return voiceOptions.find(v => v.name === select.value) || null; }
   function showToast(message) {
     els.toast.textContent = message;
     els.toast.classList.add('show');
@@ -620,38 +599,66 @@ GPS|نظام تحديد المواقع
     });
   }
   function say(text, kind = 'word') {
+    if (kind !== 'word') {
+      showToast('صوت السؤال والإجابة يتطلب تسجيلات بشرية؛ لا أستبدلها بصوت آلي.');
+      return;
+    }
     if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') {
       showToast('النطق الصوتي غير متاح في هذا المتصفح. جرّب Chrome أو Edge.');
       return;
     }
-    const selectedVoice = voiceFrom(kind === 'question' ? els.femaleVoice : els.maleVoice) || voiceFrom(els.femaleVoice);
+    if (currentSpeaking === 'word' && window.speechSynthesis.speaking) { stopSpeech(); return; }
+    const selectedVoice = voiceOptions[0];
     if (!selectedVoice) {
-      showToast('لا يوجد صوت English محلي مثبت. ثبّت صوتًا محليًا من إعدادات الجهاز أولًا.');
+      showToast('نطق الكلمة يحتاج صوت English محليًا مثبتًا على الجهاز.');
       return;
     }
+    stopSpeech();
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = selectedVoice.lang || 'en-GB';
     utterance.volume = Math.max(0, Math.min(1, Number(els.speechVolume.value) / 100));
-    const isQuestion = kind === 'question';
-    utterance.rate = isQuestion ? 0.94 : kind === 'answer' ? 0.91 : 0.91;
-    utterance.pitch = isQuestion ? 1.11 : kind === 'answer' ? 0.88 : 1;
+    utterance.rate = 0.92;
+    utterance.pitch = 1;
     utterance.voice = selectedVoice;
-    utterance.onstart = () => setSpeaking(kind);
-    utterance.onend = () => { if (currentSpeaking === kind) setSpeaking(null); };
+    utterance.onstart = () => setSpeaking('word');
+    utterance.onend = () => { if (currentSpeaking === 'word') setSpeaking(null); };
     utterance.onerror = event => {
-      if (currentSpeaking === kind) setSpeaking(null);
+      if (currentSpeaking === 'word') setSpeaking(null);
       if (event.error !== 'canceled' && event.error !== 'interrupted') showToast('تعذر تشغيل الصوت. تحقق من إعدادات الصوت في جهازك.');
     };
-    currentSpeaking = kind;
+    currentSpeaking = 'word';
     window.speechSynthesis.speak(utterance);
   }
   function stopSpeech() {
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+      currentAudio = null;
+    }
     currentSpeaking = null;
     setSpeaking(null);
     const button = $('#pauseResume');
     if (button) { button.textContent = 'Ⅱ'; button.setAttribute('aria-label', 'إيقاف مؤقت أو استئناف الصوت'); }
+  }
+  function playInterviewClip(question, kind) {
+    if (currentAudio && currentSpeaking === kind) { stopSpeech(); return; }
+    const clipUrl = window.HUMAN_INTERVIEW_AUDIO?.[question.id]?.[kind];
+    if (!clipUrl) {
+      showToast(kind === 'question' ? 'تسجيل HR البشري غير مرفق بعد.' : 'التسجيل البشري لإجابة السائق غير مرفق بعد.');
+      return;
+    }
+    const url = new URL(clipUrl, location.origin);
+    if (url.origin !== location.origin) { showToast('يجب أن يكون التسجيل محفوظًا محليًا داخل الموقع.'); return; }
+    stopSpeech();
+    currentAudio = new Audio(url.pathname);
+    currentAudio.volume = Math.max(0, Math.min(1, Number(els.speechVolume.value) / 100));
+    const clip = currentAudio;
+    setSpeaking(kind);
+    clip.onended = () => { if (currentAudio === clip) { currentAudio = null; setSpeaking(null); } };
+    clip.onerror = () => { if (currentAudio === clip) { currentAudio = null; setSpeaking(null); } showToast('تعذر تشغيل التسجيل البشري المحفوظ محليًا.'); };
+    clip.play().catch(() => { if (currentAudio === clip) { currentAudio = null; setSpeaking(null); } showToast('تعذر تشغيل التسجيل البشري المحفوظ محليًا.'); });
   }
   function createAmbient() {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -692,6 +699,7 @@ GPS|نظام تحديد المواقع
       const level = Number(els.ambientVolume.value) / 100 * 0.095;
       ambient.master.gain.setTargetAtTime(level, ambient.context.currentTime, 0.25);
     }
+    if (currentAudio) currentAudio.volume = Number(els.speechVolume.value) / 100;
     if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
       // Current utterances cannot change volume mid-sentence; the next one will use this setting.
     }
@@ -752,12 +760,13 @@ GPS|نظام تحديد المواقع
     if (button) selectQuestion(button.dataset.question);
   });
   els.detail.addEventListener('click', event => {
+    const word = event.target.closest('[data-word]');
+    if (word) { event.preventDefault(); openWord(word.dataset.word, word); return; }
     const playButton = event.target.closest('[data-play]');
     if (playButton) {
       const item = questions.find(q => q.id === selectedId);
       if (!item) return;
-      const type = playButton.dataset.play;
-      say(type === 'question' ? item.q : item.answer.join(' ... '), type);
+      playInterviewClip(item, playButton.dataset.play);
       return;
     }
     const completeButton = event.target.closest('[data-complete]');
@@ -767,8 +776,6 @@ GPS|نظام تحديد المواقع
       saveProgress(); renderQuestionList();
       return;
     }
-    const word = event.target.closest('[data-word]');
-    if (word) openWord(word.dataset.word, word);
   });
   els.detail.addEventListener('keydown', event => {
     const word = event.target.closest?.('[data-word]');
@@ -796,8 +803,6 @@ GPS|نظام تحديد المواقع
     renderNavigation(); renderQuestionList();
     $('#practice').scrollIntoView({ behavior:'smooth', block:'start' });
   });
-  els.femaleVoice.addEventListener('change', () => { if (currentSpeaking === 'question') stopSpeech(); });
-  els.maleVoice.addEventListener('change', () => { if (currentSpeaking === 'answer') stopSpeech(); });
   els.speechVolume.addEventListener('input', updateVolumeLabels);
   els.ambientVolume.addEventListener('input', updateVolumeLabels);
   els.ambientToggle.addEventListener('click', () => {
@@ -809,6 +814,12 @@ GPS|نظام تحديد المواقع
   });
   $('#stopAll').addEventListener('click', () => { stopSpeech(); stopAmbient(); showToast('تم إيقاف الأصوات.'); });
   $('#pauseResume').addEventListener('click', () => {
+    if (currentAudio) {
+      const button = $('#pauseResume');
+      if (currentAudio.paused) currentAudio.play().then(() => { button.textContent = 'Ⅱ'; }).catch(() => showToast('تعذر استئناف التسجيل.'));
+      else { currentAudio.pause(); button.textContent = '▶'; }
+      return;
+    }
     if (!('speechSynthesis' in window)) return;
     if (window.speechSynthesis.paused) { window.speechSynthesis.resume(); $('#pauseResume').textContent = 'Ⅱ'; }
     else if (window.speechSynthesis.speaking) { window.speechSynthesis.pause(); $('#pauseResume').textContent = '▶'; }
