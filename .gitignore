@@ -1,0 +1,4 @@
+dist/
+driver-interview-offline.zip
+__pycache__/
+*.pyc

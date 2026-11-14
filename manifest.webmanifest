@@ -1,0 +1,20 @@
+{
+  "name": "مِحور | استوديو مقابلة السائق",
+  "short_name": "مِحور",
+  "description": "تدريب على مقابلة السائق باللغة الإنجليزية مع أسئلة وإجابات وصوت ومعجم عربي.",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f7f7f2",
+  "theme_color": "#0d2830",
+  "icons": [
+    {
+      "src": "/brand-mark.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
