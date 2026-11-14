@@ -607,6 +607,7 @@ GPS|نظام تحديد المواقع
       showToast('النطق الصوتي غير متاح في هذا المتصفح. جرّب Chrome أو Edge.');
       return;
     }
+    updateVoices();
     if (currentSpeaking === 'word' && window.speechSynthesis.speaking) { stopSpeech(); return; }
     const selectedVoice = voiceOptions[0];
     if (!selectedVoice) {
