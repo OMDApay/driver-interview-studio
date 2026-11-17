@@ -634,6 +634,24 @@ GPS|نظام تحديد المواقع
     }
     return wordAudioBuffers.get(file);
   }
+  function warmWordAudio() {
+    if (navigator.connection?.saveData) return;
+    const files = [...new Set(Object.values(window.WORD_AUDIO_MAP || {})
+      .map(segment => segment.file)
+      .filter(file => file.startsWith('/audio/words/')))].sort();
+    if (!files.length) return;
+    let context;
+    try { context = getWordAudioContext(); } catch (_) { return; }
+    const warmNext = index => {
+      if (index >= files.length) return;
+      getWordAudioBuffer(files[index], context).catch(() => null).finally(() => {
+        const next = () => warmNext(index + 1);
+        if (window.requestIdleCallback) window.requestIdleCallback(next, { timeout: 1200 });
+        else setTimeout(next, 300);
+      });
+    };
+    warmNext(0);
+  }
   function playWord(word, target) {
     const key = normalizeWord(word);
     const segment = window.WORD_AUDIO_MAP?.[key];
@@ -944,4 +962,5 @@ GPS|نظام تحديد المواقع
   });
   window.addEventListener('appinstalled', () => showToast('أصبح التدريب متاحًا من جهازك.'));
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+  window.addEventListener('load', warmWordAudio, { once: true });
 })();

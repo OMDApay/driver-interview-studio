@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mihwar-driver-offline-v12';
+const CACHE_NAME = 'mihwar-driver-offline-v13';
 const HERO_IMAGE = '/hero-image.webp';
 const AUDIO_PATHS = Array.from({ length: 33 }, (_, i) => {
   const number = String(i + 1).padStart(2, '0');
@@ -11,14 +11,14 @@ const APP_SHELL = [
   '/manifest.webmanifest',
   '/manus-routes.json',
   '/brand-mark.svg',
-  '/src/style.css?v=12',
-  '/src/accessible.css?v=12',
+  '/src/style.css?v=13',
+  '/src/accessible.css?v=13',
   '/src/content.js',
   '/src/offline-dictionary.js',
   '/src/arabic-pronunciation.js',
   '/src/interview-audio.js',
   '/src/word-audio-map.js?v=7',
-  '/src/app.js?v=12',
+  '/src/app.js?v=13',
   HERO_IMAGE,
   ...AUDIO_PATHS,
   ...WORD_AUDIO_PATHS
