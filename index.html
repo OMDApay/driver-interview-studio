@@ -3,12 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#0d2830" />
+    <meta name="theme-color" content="#121a34" />
     <meta name="description" content="تدرّب على مقابلة سائق EG–Driver (S1) باللغة الإنجليزية؛ اسمع السؤال والإجابة وتعلّم مفردات المقابلة." />
     <title>جاهز للمقابلة | Driver Interview Studio</title>
     <link rel="icon" type="image/svg+xml" href="/brand-mark.svg" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/src/style.css" />
+    <link rel="stylesheet" href="/src/style.css?v=12" />
+    <link rel="stylesheet" href="/src/accessible.css?v=12" />
   </head>
   <body>
     <div class="site-shell">
@@ -54,6 +55,16 @@
             <div class="hero-ring ring-one"></div><div class="hero-ring ring-two"></div>
             <div class="compass-mark"><span class="compass-core">M</span><i class="north">N</i><i class="east">E</i><i class="south">S</i><i class="west">W</i></div>
             <div class="hero-stamp"><span>28</span><small>سنـة<br />خبرة قيادة</small></div>
+            <div class="hero-voice-cast" aria-label="شخصيتا المقابلة">
+              <div class="hero-cast-person">
+                <svg class="cast-portrait cast-portrait-woman" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#efe1d5"/><path d="M9 60c2-13 10-19 23-19s21 6 23 19" fill="#563a50"/><ellipse cx="32" cy="29" rx="15" ry="18" fill="#a9644c"/><path d="M16 28c-2-14 5-23 16-23s19 8 17 24l-4-7c-7 1-15-1-21-6-1 5-4 9-8 12z" fill="#211b2a"/><circle cx="27" cy="29" r="1.5" fill="#19131a"/><circle cx="38" cy="29" r="1.5" fill="#19131a"/><path d="M28 37q4 3 8 0" fill="none" stroke="#713d38" stroke-width="1.5" stroke-linecap="round"/><path d="M22 47l10 8 10-8" fill="#f1c17f"/><path d="M21 22q4-6 9-4M35 18q5-2 9 3" fill="none" stroke="#211b2a" stroke-width="2" stroke-linecap="round"/></svg>
+                <span><strong>HR · INDIA</strong><small>امرأة · الأسئلة</small></span>
+              </div>
+              <div class="hero-cast-person">
+                <svg class="cast-portrait cast-portrait-man" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#e9d8c7"/><path d="M8 60c2-14 11-20 24-20s22 6 24 20" fill="#202b49"/><path d="M25 43l7 9 7-9 6 17H19z" fill="#eee5d9"/><ellipse cx="32" cy="28" rx="15" ry="18" fill="#a86a4d"/><path d="M17 27c-2-13 5-21 15-21 12 0 18 9 15 23l-5-8q-12 2-21-5z" fill="#201b24"/><circle cx="27" cy="29" r="1.5" fill="#19131a"/><circle cx="38" cy="29" r="1.5" fill="#19131a"/><path d="M27 37q5 2 10 0" fill="none" stroke="#6b3e35" stroke-width="1.5" stroke-linecap="round"/></svg>
+                <span><strong>DRIVER · INDIA</strong><small>رجل · الإجابات</small></span>
+              </div>
+            </div>
             <div class="hero-caption-card"><span class="tiny-wave"><b></b><b></b><b></b><b></b><b></b></span><span>حضورك يبدأ من صوتك</span></div>
           </div>
         </section>
@@ -100,25 +111,29 @@
       <button class="dock-toggle" id="dockToggle" aria-expanded="true" aria-controls="soundPanel"><span class="dock-wave"><i></i><i></i><i></i></span><span>استوديو الصوت</span><span class="dock-chevron">⌃</span></button>
       <div class="sound-panel" id="soundPanel">
         <div class="sound-panel-title"><div><span class="sound-live-dot"></span><strong>أصوات المقابلة</strong></div><div class="sound-actions"><button class="mini-icon-button" id="pauseResume" aria-label="إيقاف مؤقت أو استئناف الصوت" title="إيقاف مؤقت أو استئناف الصوت">Ⅱ</button><button class="mini-icon-button" id="stopAll" aria-label="إيقاف كل الأصوات" title="إيقاف كل الأصوات">■</button></div></div>
-        <div class="voice-row"><span class="voice-avatar hr-avatar">HR</span><div class="voice-meta"><strong>مسؤولة الموارد البشرية</strong><small>تسجيل بشري مطلوب · English (India)</small></div></div>
-        <div class="voice-row"><span class="voice-avatar driver-avatar">DR</span><div class="voice-meta"><strong>السائق المرشح</strong><small>تسجيل رجل بشري مطلوب · English</small></div></div>
+        <div class="voice-row"><span class="voice-avatar hr-avatar">HR</span><div class="voice-meta"><strong>مسؤولة الموارد البشرية</strong><small>صوت رقمي نسائي · English (India) · للأسئلة</small></div><button class="voice-preview-button" data-preview-voice="question" aria-label="معاينة صوت مسؤولة الموارد البشرية">▶ معاينة</button></div>
+        <div class="voice-row"><span class="voice-avatar driver-avatar">DR</span><div class="voice-meta"><strong>السائق المرشح</strong><small>صوت رقمي رجالي · English (India) · للإجابات</small></div><button class="voice-preview-button" data-preview-voice="answer" aria-label="معاينة صوت السائق المرشح">▶ معاينة</button></div>
+        <div class="voice-choice-row"><label for="voiceSampleSelect">اختر الصوت لمعاينته</label><select id="voiceSampleSelect"><option value="question">المرأة الهندية — مسؤولة الموارد</option><option value="answer">الرجل الهندي — السائق</option></select><button id="voiceSamplePlay" aria-label="تشغيل عينة الصوت المختار">استمع</button></div>
         <div class="voice-volume"><label for="speechVolume">مستوى صوت المتحدثين</label><span id="speechVolumeLabel">90%</span><input id="speechVolume" type="range" min="0" max="100" value="90" /></div>
         <div class="ambient-row"><div><strong>أجواء هادئة</strong><small>نغمة ترقّب خافتة جدًا</small></div><button class="switch" id="ambientToggle" role="switch" aria-checked="false" aria-label="تشغيل أجواء صوتية خافتة"><span></span></button></div>
         <div class="ambient-volume"><label for="ambientVolume">مستوى الأجواء</label><span id="ambientVolumeLabel">8%</span><input id="ambientVolume" type="range" min="0" max="30" value="8" /></div>
-        <p class="voice-hint">نطق الكلمة المفردة يستخدم صوت English المحلي فقط. أما السؤال والإجابة فيحتاجان تسجيلين بشريين محفوظين داخل الموقع؛ لم تُرفق ملفاتهما بعد.</p>
+        <p class="voice-hint">زر السؤال يشغّل صوت المرأة؛ زر الإجابة يشغّل صوت الرجل. استخدم «معاينة» أو القائمة لسماع عينة كل دور. الصوتان مولّدان رقميًا وليسا تسجيلين بشريين. نطق الكلمة منفصل ويظهر معها معناها بالعربية.</p>
       </div>
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <div class="word-popover" id="wordPopover" role="dialog" aria-label="معنى الكلمة" hidden>
       <button class="popover-close" id="closePopover" aria-label="إغلاق معنى الكلمة">×</button>
-      <span class="popover-kicker">مفردة من المقابلة</span><strong class="popover-word" id="popoverWord"></strong>
+      <span class="popover-kicker">المعنى والنطق بالعربية</span><strong class="popover-word" id="popoverWord"></strong>
       <span class="popover-pronunciation" id="popoverPronunciation"></span>
       <span class="popover-meaning" id="popoverMeaning">المعنى العربي من القاموس المضمّن.</span>
       <button class="pronounce-word" id="pronounceWord">استمع للنطق <span>↗</span></button>
     </div>
     <script src="/src/content.js" defer></script>
     <script src="/src/offline-dictionary.js" defer></script>
-    <script src="/src/app.js" defer></script>
+    <script src="/src/arabic-pronunciation.js" defer></script>
+    <script src="/src/interview-audio.js" defer></script>
+    <script src="/src/word-audio-map.js?v=7" defer></script>
+    <script src="/src/app.js?v=12" defer></script>
   </body>
 </html>

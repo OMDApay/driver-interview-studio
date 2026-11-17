@@ -10,7 +10,8 @@
     speechVolume: $('#speechVolume'), speechVolumeLabel: $('#speechVolumeLabel'),
     ambientVolume: $('#ambientVolume'), ambientVolumeLabel: $('#ambientVolumeLabel'), ambientToggle: $('#ambientToggle'),
     dock: $('#soundDock'), dockToggle: $('#dockToggle'), toast: $('#toast'), popover: $('#wordPopover'),
-    popWord: $('#popoverWord'), popMeaning: $('#popoverMeaning'), popPronunciation: $('#popoverPronunciation')
+    popWord: $('#popoverWord'), popMeaning: $('#popoverMeaning'), popPronunciation: $('#popoverPronunciation'),
+    voiceSampleSelect: $('#voiceSampleSelect'), voiceSamplePlay: $('#voiceSamplePlay')
   };
   const STORAGE_DONE = 'mihwar-driver-done-v1';
   let done = new Set();
@@ -21,6 +22,13 @@
   let voiceOptions = [];
   let ambient = null;
   let currentAudio = null;
+  let audioToken = 0;
+  let wordAudioContext = null;
+  let currentWordSource = null;
+  let currentWordGain = null;
+  let currentWordKey = '';
+  let currentWordElement = null;
+  const wordAudioBuffers = new Map();
   let lastWord = '';
   let outsideClickHandler = null;
   try { done = new Set(JSON.parse(localStorage.getItem(STORAGE_DONE) || '[]')); } catch (_) { done = new Set(); }
@@ -556,6 +564,7 @@ GPS|نظام تحديد المواقع
   function wordMarkup(text) {
     return String(text).split(/([A-Za-z0-9]+(?:[’'-][A-Za-z0-9]+)*)/g).map(piece => {
       if (!/^[A-Za-z0-9]+(?:[’'-][A-Za-z0-9]+)*$/.test(piece)) return escapeHtml(piece);
+      if (!/[A-Za-z]/.test(piece)) return escapeHtml(piece);
       const safe = escapeHtml(piece);
       return `<span class="tap-word" role="button" tabindex="0" data-word="${safe}" aria-label="${safe}; اضغط لسماع الكلمة ومعناها">${safe}</span>`;
     }).join('');
@@ -573,6 +582,7 @@ GPS|نظام تحديد المواقع
       <div class="answer-footer"><span class="answer-tip"><strong>تلميح تدريب:</strong> ${escapeHtml(question.tip || 'أجب بوضوح وبصدق.')}</span><button class="complete-button ${isDone ? 'completed' : ''}" data-complete="${question.id}" aria-pressed="${isDone}">${isDone ? '✓ تدربت عليها' : 'علّمها كمتدرّب عليها'}</button></div>`;
   }
   function selectQuestion(id) {
+    stopSpeech();
     selectedId = id;
     renderNavigation();
     renderQuestionList();
@@ -592,62 +602,123 @@ GPS|نظام تحديد المواقع
   }
   function setSpeaking(kind) {
     currentSpeaking = kind;
+    els.detail.querySelectorAll('.question-block').forEach((block, index) => {
+      block.classList.toggle('is-speaking', kind === (index === 0 ? 'question' : 'answer'));
+    });
+    els.detail.querySelectorAll('.tap-word.is-spoken-word').forEach(word => word.classList.remove('is-spoken-word'));
+    if (kind === 'word' && currentWordElement?.isConnected) currentWordElement.classList.add('is-spoken-word');
     els.detail.querySelectorAll('[data-play]').forEach(button => {
       const active = button.dataset.play === kind;
       button.classList.toggle('is-speaking', active);
+      button.setAttribute('aria-label', active ? 'إيقاف المقطع الصوتي الجاري' : button.dataset.play === 'question' ? 'استمع إلى سؤال الموارد البشرية' : 'استمع إلى إجابة المرشح');
       button.innerHTML = `<span class="listen-symbol">${active ? '◼' : '▶'}</span> ${active ? 'جارٍ الاستماع' : button.dataset.play === 'question' ? 'استمع للسؤال' : 'استمع للإجابة'}`;
     });
   }
-  function say(text, kind = 'word') {
-    if (kind !== 'word') {
-      showToast('صوت السؤال والإجابة يتطلب تسجيلات بشرية؛ لا أستبدلها بصوت آلي.');
+  function getWordAudioContext() {
+    if (!wordAudioContext) {
+      const Context = window.AudioContext || window.webkitAudioContext;
+      if (!Context) throw new Error('Web Audio is not supported');
+      try { wordAudioContext = new Context({ sampleRate: 22050 }); }
+      catch (_) { wordAudioContext = new Context(); }
+    }
+    return wordAudioContext;
+  }
+  function getWordAudioBuffer(file, context) {
+    if (!wordAudioBuffers.has(file)) {
+      const request = fetch(file).then(response => {
+        if (!response.ok) throw new Error('Audio file unavailable');
+        return response.arrayBuffer();
+      }).then(data => context.decodeAudioData(data.slice(0)));
+      wordAudioBuffers.set(file, request);
+      request.catch(() => wordAudioBuffers.delete(file));
+    }
+    return wordAudioBuffers.get(file);
+  }
+  function playWord(word, target) {
+    const key = normalizeWord(word);
+    const segment = window.WORD_AUDIO_MAP?.[key];
+    if (!segment) {
+      if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') {
+        showToast('لا يتوفر تسجيل لهذه الكلمة ولا يدعم المتصفح النطق الصوتي.');
+        return;
+      }
+      if (currentSpeaking === 'word' && currentWordKey === key) { stopSpeech(); return; }
+      stopSpeech();
+      const token = ++audioToken;
+      currentSpeaking = 'word';
+      currentWordKey = key;
+      currentWordElement = target || null;
+      setSpeaking('word');
+      const utterance = new SpeechSynthesisUtterance(word);
+      utterance.lang = 'en-GB';
+      utterance.volume = Math.max(0, Math.min(1, Number(els.speechVolume.value) / 100));
+      utterance.rate = 0.82;
+      const localVoice = voiceOptions.find(voice => /^en[-_](GB|IN|US)$/i.test(voice.lang)) || voiceOptions[0];
+      if (localVoice) utterance.voice = localVoice;
+      utterance.onend = () => { if (token === audioToken) stopSpeech(); };
+      utterance.onerror = () => {
+        if (token === audioToken) { stopSpeech(); showToast('تعذر نطق هذه الكلمة على هذا الجهاز.'); }
+      };
+      window.speechSynthesis.speak(utterance);
       return;
     }
-    if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') {
-      showToast('النطق الصوتي غير متاح في هذا المتصفح. جرّب Chrome أو Edge.');
-      return;
-    }
-    updateVoices();
-    if (currentSpeaking === 'word' && window.speechSynthesis.speaking) { stopSpeech(); return; }
-    const selectedVoice = voiceOptions[0];
-    if (!selectedVoice) {
-      showToast('نطق الكلمة يحتاج صوت English محليًا مثبتًا على الجهاز.');
-      return;
-    }
+    if (currentSpeaking === 'word' && currentWordKey === key) { stopSpeech(); return; }
     stopSpeech();
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = selectedVoice.lang || 'en-GB';
-    utterance.volume = Math.max(0, Math.min(1, Number(els.speechVolume.value) / 100));
-    utterance.rate = 0.92;
-    utterance.pitch = 1;
-    utterance.voice = selectedVoice;
-    utterance.onstart = () => setSpeaking('word');
-    utterance.onend = () => { if (currentSpeaking === 'word') setSpeaking(null); };
-    utterance.onerror = event => {
-      if (currentSpeaking === 'word') setSpeaking(null);
-      if (event.error !== 'canceled' && event.error !== 'interrupted') showToast('تعذر تشغيل الصوت. تحقق من إعدادات الصوت في جهازك.');
-    };
+    const token = ++audioToken;
     currentSpeaking = 'word';
-    window.speechSynthesis.speak(utterance);
+    currentWordKey = key;
+    currentWordElement = target || null;
+    setSpeaking('word');
+    let context;
+    try { context = getWordAudioContext(); }
+    catch (_) { stopSpeech(); showToast('تعذر تشغيل صوت المفردة في هذا المتصفح.'); return; }
+    context.resume().catch(() => {});
+    getWordAudioBuffer(segment.file, context).then(buffer => {
+      if (token !== audioToken || currentSpeaking !== 'word') return;
+      const start = Math.max(0, Math.min(segment.start, Math.max(0, buffer.duration - 0.01)));
+      const duration = Math.max(0.05, Math.min(segment.end - segment.start, buffer.duration - start));
+      const source = context.createBufferSource();
+      const gain = context.createGain();
+      source.buffer = buffer;
+      gain.gain.value = Math.max(0, Math.min(1, Number(els.speechVolume.value) / 100));
+      source.connect(gain);
+      gain.connect(context.destination);
+      currentWordSource = source;
+      currentWordGain = gain;
+      source.onended = () => { if (token === audioToken && currentWordSource === source) stopSpeech(); };
+      source.start(0, start, duration);
+    }).catch(() => {
+      if (token === audioToken) { stopSpeech(); showToast('تعذر تحميل نطق الكلمة.'); }
+    });
   }
   function stopSpeech() {
+    audioToken += 1;
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     if (currentAudio) {
       currentAudio.pause();
       currentAudio.currentTime = 0;
+      currentAudio.removeAttribute('src');
+      currentAudio.load();
       currentAudio = null;
     }
+    if (currentWordSource) {
+      try { currentWordSource.stop(); } catch (_) {}
+      currentWordSource.disconnect();
+      currentWordSource = null;
+      currentWordGain = null;
+    }
+    currentWordKey = '';
     currentSpeaking = null;
     setSpeaking(null);
+    currentWordElement = null;
     const button = $('#pauseResume');
     if (button) { button.textContent = 'Ⅱ'; button.setAttribute('aria-label', 'إيقاف مؤقت أو استئناف الصوت'); }
   }
   function playInterviewClip(question, kind) {
-    if (currentAudio && currentSpeaking === kind) { stopSpeech(); return; }
-    const clipUrl = window.HUMAN_INTERVIEW_AUDIO?.[question.id]?.[kind];
+    if (currentAudio && currentSpeaking === kind) { stopSpeech(); showToast('تم إيقاف المقطع.'); return; }
+    const clipUrl = window.INTERVIEW_AUDIO?.[question.id]?.[kind];
     if (!clipUrl) {
-      showToast(kind === 'question' ? 'تسجيل HR البشري غير مرفق بعد.' : 'التسجيل البشري لإجابة السائق غير مرفق بعد.');
+      showToast('المقطع الصوتي غير متاح الآن.');
       return;
     }
     const url = new URL(clipUrl, location.origin);
@@ -658,8 +729,8 @@ GPS|نظام تحديد المواقع
     const clip = currentAudio;
     setSpeaking(kind);
     clip.onended = () => { if (currentAudio === clip) { currentAudio = null; setSpeaking(null); } };
-    clip.onerror = () => { if (currentAudio === clip) { currentAudio = null; setSpeaking(null); } showToast('تعذر تشغيل التسجيل البشري المحفوظ محليًا.'); };
-    clip.play().catch(() => { if (currentAudio === clip) { currentAudio = null; setSpeaking(null); } showToast('تعذر تشغيل التسجيل البشري المحفوظ محليًا.'); });
+    clip.onerror = () => { if (currentAudio !== clip) return; currentAudio = null; setSpeaking(null); showToast('تعذر تشغيل المقطع. تحقق من إعدادات الصوت.'); };
+    clip.play().catch(() => { if (currentAudio !== clip) return; currentAudio = null; setSpeaking(null); showToast('تعذر تشغيل المقطع. تحقق من إعدادات الصوت.'); });
   }
   function createAmbient() {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -701,6 +772,7 @@ GPS|نظام تحديد المواقع
       ambient.master.gain.setTargetAtTime(level, ambient.context.currentTime, 0.25);
     }
     if (currentAudio) currentAudio.volume = Number(els.speechVolume.value) / 100;
+    if (currentWordGain) currentWordGain.gain.value = Number(els.speechVolume.value) / 100;
     if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
       // Current utterances cannot change volume mid-sentence; the next one will use this setting.
     }
@@ -725,8 +797,9 @@ GPS|نظام تحديد المواقع
     lastWord = word;
     els.popover.hidden = false;
     els.popWord.textContent = word;
-    els.popPronunciation.textContent = 'English · اضغط للاستماع';
-    els.popMeaning.textContent = lookupMeaning(word);
+    const phonetic = window.arabicPronunciation?.(word) || word;
+    els.popPronunciation.innerHTML = `<bdi dir="ltr">${escapeHtml(word)}</bdi> — <bdi dir="rtl">${escapeHtml(phonetic)}</bdi>`;
+    els.popMeaning.textContent = `المعنى: ${lookupMeaning(word)}`;
     const rect = target?.getBoundingClientRect();
     if (rect && innerWidth > 700) {
       const left = Math.min(innerWidth - 175, Math.max(175, rect.left + rect.width / 2));
@@ -734,7 +807,7 @@ GPS|نظام تحديد المواقع
       els.popover.style.left = `${left}px`;
       els.popover.style.top = `${top}px`;
     }
-    say(word, 'word');
+    playWord(word, target);
   }
   function closeWord() { els.popover.hidden = true; }
 
@@ -778,6 +851,16 @@ GPS|نظام تحديد المواقع
       return;
     }
   });
+  els.dock.addEventListener('click', event => {
+    const preview = event.target.closest('[data-preview-voice]');
+    if (!preview) return;
+    const sample = questions[0];
+    if (sample) playInterviewClip(sample, preview.dataset.previewVoice);
+  });
+  els.voiceSamplePlay.addEventListener('click', () => {
+    const sample = questions[0];
+    if (sample) playInterviewClip(sample, els.voiceSampleSelect.value);
+  });
   els.detail.addEventListener('keydown', event => {
     const word = event.target.closest?.('[data-word]');
     if (word && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); openWord(word.dataset.word, word); }
@@ -815,6 +898,12 @@ GPS|نظام تحديد المواقع
   });
   $('#stopAll').addEventListener('click', () => { stopSpeech(); stopAmbient(); showToast('تم إيقاف الأصوات.'); });
   $('#pauseResume').addEventListener('click', () => {
+    if (currentWordSource && wordAudioContext) {
+      const button = $('#pauseResume');
+      if (wordAudioContext.state === 'suspended') wordAudioContext.resume().then(() => { button.textContent = 'Ⅱ'; }).catch(() => showToast('تعذر استئناف نطق الكلمة.'));
+      else wordAudioContext.suspend().then(() => { button.textContent = '▶'; }).catch(() => showToast('تعذر إيقاف نطق الكلمة مؤقتًا.'));
+      return;
+    }
     if (currentAudio) {
       const button = $('#pauseResume');
       if (currentAudio.paused) currentAudio.play().then(() => { button.textContent = 'Ⅱ'; }).catch(() => showToast('تعذر استئناف التسجيل.'));
@@ -827,7 +916,7 @@ GPS|نظام تحديد المواقع
     else showToast('شغّل سؤالًا أو إجابة أولًا.');
   });
   $('#closePopover').addEventListener('click', closeWord);
-  $('#pronounceWord').addEventListener('click', () => say(lastWord, 'word'));
+  $('#pronounceWord').addEventListener('click', () => playWord(lastWord));
   els.popover.addEventListener('click', event => { if (event.target === els.popover) closeWord(); });
   document.addEventListener('keydown', event => {
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); els.search.focus(); }

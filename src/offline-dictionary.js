@@ -228,6 +228,75 @@ work|عمل
 worked|عمل
 yes|نعم
 yourself|نفسك
+notify|يُبلغ
+shift|نوبة عمل
+cleanliness|النظافة
+unexpectedly|على نحو غير متوقع
+updated|أبقى على اطلاع
+sacrifice|يضحّي بـ
+recover|يستعيد
+communicated|تواصل
+guide|يرشد
+showed|أظهر
+due|بسبب
+now|الآن
+thorough|دقيق
+efficient|كفء
+armoured-vehicle|مركبة مصفحة
+sound|سليم / متين
+protect|يحمي
+must|يجب
+obey|يلتزم بـ
+suggest|يقترح
+expected|متوقع
+disclose|يفصح عن
+injuries|إصابات
+call|يتصل / ينادي
+facts|حقائق
+speculating|التكهن
+right|الصحيح / المناسب
+approved|معتمد
+departure|المغادرة
+gave|أعطى
+address|عنوان
+enough|كافٍ
+verify|يتحقق من
+timing|التوقيت
+completed|أكمل
+set|يحدد
+regularly|بانتظام
+respectfully|باحترام
+practical|عملي
+goal|هدف
+warnings|تحذيرات
+defects|عيوب
+changes|تغييرات
+assignments|مهام / تكليفات
+supported|مدعوم / ساند
+as|كما / بصفته
+vehicles|مركبات
+embassy's|الخاصة بالسفارة
+colleagues|زملاء العمل
+checking|الفحص / التحقق
+deadlines|مواعيد نهائية
+users|مستخدمون
+laws|قوانين
+schedules|جداول / مواعيد
+conversations|محادثات
+services|خدمات
+remained|بقي / استمر
+delays|تأخيرات
+vehicle's|الخاصة بالمركبة
+procedures|إجراءات
+concerns|مخاوف / مسائل
+supporting|مساندة / دعم
+delegations|وفود
+monitored|راقب / تابع
+locations|مواقع
+journeys|رحلات
+doing|القيام بـ
+requires|يتطلب
+questions|أسئلة
 `.trim().split('\n').map(row => {
   const split = row.indexOf('|');
   return [row.slice(0, split).toLowerCase(), row.slice(split + 1)];
