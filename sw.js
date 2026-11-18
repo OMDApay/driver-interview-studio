@@ -1,27 +1,24 @@
-const CACHE_NAME = 'mihwar-driver-offline-v13';
+const CACHE_NAME = 'mihwar-driver-offline-v14';
 const HERO_IMAGE = '/hero-image.webp';
 const AUDIO_PATHS = Array.from({ length: 33 }, (_, i) => {
   const number = String(i + 1).padStart(2, '0');
   return [`/audio/question-${number}.mp3`, `/audio/answer-${number}.mp3`];
 }).flat();
-const WORD_AUDIO_PATHS = ['/audio/words/chunk-01.mp3', '/audio/words/chunk-02.mp3'];
 const APP_SHELL = [
   '/',
   '/index.html',
   '/manifest.webmanifest',
   '/manus-routes.json',
   '/brand-mark.svg',
-  '/src/style.css?v=13',
-  '/src/accessible.css?v=13',
+  '/src/style.css?v=14',
+  '/src/accessible.css?v=14',
   '/src/content.js',
   '/src/offline-dictionary.js',
   '/src/arabic-pronunciation.js',
   '/src/interview-audio.js',
-  '/src/word-audio-map.js?v=7',
-  '/src/app.js?v=13',
+  '/src/app.js?v=14',
   HERO_IMAGE,
-  ...AUDIO_PATHS,
-  ...WORD_AUDIO_PATHS
+  ...AUDIO_PATHS
 ];
 
 self.addEventListener('install', event => {

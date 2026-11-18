@@ -8,8 +8,8 @@
     <title>جاهز للمقابلة | Driver Interview Studio</title>
     <link rel="icon" type="image/svg+xml" href="/brand-mark.svg" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/src/style.css?v=13" />
-    <link rel="stylesheet" href="/src/accessible.css?v=13" />
+    <link rel="stylesheet" href="/src/style.css?v=14" />
+    <link rel="stylesheet" href="/src/accessible.css?v=14" />
   </head>
   <body>
     <div class="site-shell">
@@ -115,9 +115,10 @@
         <div class="voice-row"><span class="voice-avatar driver-avatar">DR</span><div class="voice-meta"><strong>السائق المرشح</strong><small>صوت رقمي رجالي · English (India) · للإجابات</small></div><button class="voice-preview-button" data-preview-voice="answer" aria-label="معاينة صوت السائق المرشح">▶ معاينة</button></div>
         <div class="voice-choice-row"><label for="voiceSampleSelect">اختر الصوت لمعاينته</label><select id="voiceSampleSelect"><option value="question">المرأة الهندية — مسؤولة الموارد</option><option value="answer">الرجل الهندي — السائق</option></select><button id="voiceSamplePlay" aria-label="تشغيل عينة الصوت المختار">استمع</button></div>
         <div class="voice-volume"><label for="speechVolume">مستوى صوت المتحدثين</label><span id="speechVolumeLabel">90%</span><input id="speechVolume" type="range" min="0" max="100" value="90" /></div>
+        <div class="voice-speed"><label for="speechRate">سرعة النطق</label><span id="speechRateLabel">عادي · 1.0×</span><input id="speechRate" type="range" min="0.65" max="1.35" step="0.05" value="1" aria-label="ضبط سرعة نطق الأسئلة والإجابات والكلمات" /></div>
         <div class="ambient-row"><div><strong>أجواء هادئة</strong><small>نغمة ترقّب خافتة جدًا</small></div><button class="switch" id="ambientToggle" role="switch" aria-checked="false" aria-label="تشغيل أجواء صوتية خافتة"><span></span></button></div>
         <div class="ambient-volume"><label for="ambientVolume">مستوى الأجواء</label><span id="ambientVolumeLabel">8%</span><input id="ambientVolume" type="range" min="0" max="30" value="8" /></div>
-        <p class="voice-hint">زر السؤال يشغّل صوت المرأة؛ زر الإجابة يشغّل صوت الرجل. استخدم «معاينة» أو القائمة لسماع عينة كل دور. الصوتان مولّدان رقميًا وليسا تسجيلين بشريين. نطق الكلمة منفصل ويظهر معها معناها بالعربية.</p>
+        <p class="voice-hint">زر السؤال يشغّل صوت المرأة؛ زر الإجابة يشغّل صوت الرجل. اضبط السرعة من المنزلق، واضغط أي كلمة لينطقها المتصفح نفسها مباشرة مع معناها بالعربية. الصوتان مولّدان رقميًا وليسا تسجيلين بشريين.</p>
       </div>
     </div>
 
@@ -133,7 +134,6 @@
     <script src="/src/offline-dictionary.js" defer></script>
     <script src="/src/arabic-pronunciation.js" defer></script>
     <script src="/src/interview-audio.js" defer></script>
-    <script src="/src/word-audio-map.js?v=7" defer></script>
-    <script src="/src/app.js?v=13" defer></script>
+    <script src="/src/app.js?v=14" defer></script>
   </body>
 </html>

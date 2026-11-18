@@ -8,6 +8,7 @@
     activeLabel: $('#activeCategoryLabel'), count: $('#visibleCount'), total: $('#questionCount'), empty: $('#emptyState'),
     progressLabel: $('#progressLabel'), progressBar: $('#progressBar'), onlyNew: $('#unansweredFilter'),
     speechVolume: $('#speechVolume'), speechVolumeLabel: $('#speechVolumeLabel'),
+    speechRate: $('#speechRate'), speechRateLabel: $('#speechRateLabel'),
     ambientVolume: $('#ambientVolume'), ambientVolumeLabel: $('#ambientVolumeLabel'), ambientToggle: $('#ambientToggle'),
     dock: $('#soundDock'), dockToggle: $('#dockToggle'), toast: $('#toast'), popover: $('#wordPopover'),
     popWord: $('#popoverWord'), popMeaning: $('#popoverMeaning'), popPronunciation: $('#popoverPronunciation'),
@@ -23,12 +24,8 @@
   let ambient = null;
   let currentAudio = null;
   let audioToken = 0;
-  let wordAudioContext = null;
-  let currentWordSource = null;
-  let currentWordGain = null;
   let currentWordKey = '';
   let currentWordElement = null;
-  const wordAudioBuffers = new Map();
   let lastWord = '';
   let outsideClickHandler = null;
   try { done = new Set(JSON.parse(localStorage.getItem(STORAGE_DONE) || '[]')); } catch (_) { done = new Set(); }
@@ -614,70 +611,10 @@ GPS|نظام تحديد المواقع
       button.innerHTML = `<span class="listen-symbol">${active ? '◼' : '▶'}</span> ${active ? 'جارٍ الاستماع' : button.dataset.play === 'question' ? 'استمع للسؤال' : 'استمع للإجابة'}`;
     });
   }
-  function getWordAudioContext() {
-    if (!wordAudioContext) {
-      const Context = window.AudioContext || window.webkitAudioContext;
-      if (!Context) throw new Error('Web Audio is not supported');
-      try { wordAudioContext = new Context({ sampleRate: 22050 }); }
-      catch (_) { wordAudioContext = new Context(); }
-    }
-    return wordAudioContext;
-  }
-  function getWordAudioBuffer(file, context) {
-    if (!wordAudioBuffers.has(file)) {
-      const request = fetch(file).then(response => {
-        if (!response.ok) throw new Error('Audio file unavailable');
-        return response.arrayBuffer();
-      }).then(data => context.decodeAudioData(data.slice(0)));
-      wordAudioBuffers.set(file, request);
-      request.catch(() => wordAudioBuffers.delete(file));
-    }
-    return wordAudioBuffers.get(file);
-  }
-  function warmWordAudio() {
-    if (navigator.connection?.saveData) return;
-    const files = [...new Set(Object.values(window.WORD_AUDIO_MAP || {})
-      .map(segment => segment.file)
-      .filter(file => file.startsWith('/audio/words/')))].sort();
-    if (!files.length) return;
-    let context;
-    try { context = getWordAudioContext(); } catch (_) { return; }
-    const warmNext = index => {
-      if (index >= files.length) return;
-      getWordAudioBuffer(files[index], context).catch(() => null).finally(() => {
-        const next = () => warmNext(index + 1);
-        if (window.requestIdleCallback) window.requestIdleCallback(next, { timeout: 1200 });
-        else setTimeout(next, 300);
-      });
-    };
-    warmNext(0);
-  }
   function playWord(word, target) {
     const key = normalizeWord(word);
-    const segment = window.WORD_AUDIO_MAP?.[key];
-    if (!segment) {
-      if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') {
-        showToast('لا يتوفر تسجيل لهذه الكلمة ولا يدعم المتصفح النطق الصوتي.');
-        return;
-      }
-      if (currentSpeaking === 'word' && currentWordKey === key) { stopSpeech(); return; }
-      stopSpeech();
-      const token = ++audioToken;
-      currentSpeaking = 'word';
-      currentWordKey = key;
-      currentWordElement = target || null;
-      setSpeaking('word');
-      const utterance = new SpeechSynthesisUtterance(word);
-      utterance.lang = 'en-GB';
-      utterance.volume = Math.max(0, Math.min(1, Number(els.speechVolume.value) / 100));
-      utterance.rate = 0.82;
-      const localVoice = voiceOptions.find(voice => /^en[-_](GB|IN|US)$/i.test(voice.lang)) || voiceOptions[0];
-      if (localVoice) utterance.voice = localVoice;
-      utterance.onend = () => { if (token === audioToken) stopSpeech(); };
-      utterance.onerror = () => {
-        if (token === audioToken) { stopSpeech(); showToast('تعذر نطق هذه الكلمة على هذا الجهاز.'); }
-      };
-      window.speechSynthesis.speak(utterance);
+    if (!key || !('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') {
+      showToast('لا يدعم هذا المتصفح نطق الكلمة مباشرة.');
       return;
     }
     if (currentSpeaking === 'word' && currentWordKey === key) { stopSpeech(); return; }
@@ -687,27 +624,19 @@ GPS|نظام تحديد المواقع
     currentWordKey = key;
     currentWordElement = target || null;
     setSpeaking('word');
-    let context;
-    try { context = getWordAudioContext(); }
-    catch (_) { stopSpeech(); showToast('تعذر تشغيل صوت المفردة في هذا المتصفح.'); return; }
-    context.resume().catch(() => {});
-    getWordAudioBuffer(segment.file, context).then(buffer => {
-      if (token !== audioToken || currentSpeaking !== 'word') return;
-      const start = Math.max(0, Math.min(segment.start, Math.max(0, buffer.duration - 0.01)));
-      const duration = Math.max(0.05, Math.min(segment.end - segment.start, buffer.duration - start));
-      const source = context.createBufferSource();
-      const gain = context.createGain();
-      source.buffer = buffer;
-      gain.gain.value = Math.max(0, Math.min(1, Number(els.speechVolume.value) / 100));
-      source.connect(gain);
-      gain.connect(context.destination);
-      currentWordSource = source;
-      currentWordGain = gain;
-      source.onended = () => { if (token === audioToken && currentWordSource === source) stopSpeech(); };
-      source.start(0, start, duration);
-    }).catch(() => {
-      if (token === audioToken) { stopSpeech(); showToast('تعذر تحميل نطق الكلمة.'); }
-    });
+    const utterance = new SpeechSynthesisUtterance(String(word).trim());
+    utterance.lang = 'en-GB';
+    utterance.volume = Math.max(0, Math.min(1, Number(els.speechVolume.value) / 100));
+    utterance.rate = Number(els.speechRate.value);
+    const localVoice = voiceOptions.find(voice => /^en[-_]IN$/i.test(voice.lang))
+      || voiceOptions.find(voice => /^en[-_]GB$/i.test(voice.lang))
+      || voiceOptions.find(voice => /^en([-_]|$)/i.test(voice.lang));
+    if (localVoice) utterance.voice = localVoice;
+    utterance.onend = () => { if (token === audioToken) stopSpeech(); };
+    utterance.onerror = () => {
+      if (token === audioToken) { stopSpeech(); showToast('تعذر نطق هذه الكلمة على هذا الجهاز.'); }
+    };
+    window.speechSynthesis.speak(utterance);
   }
   function stopSpeech() {
     audioToken += 1;
@@ -718,12 +647,6 @@ GPS|نظام تحديد المواقع
       currentAudio.removeAttribute('src');
       currentAudio.load();
       currentAudio = null;
-    }
-    if (currentWordSource) {
-      try { currentWordSource.stop(); } catch (_) {}
-      currentWordSource.disconnect();
-      currentWordSource = null;
-      currentWordGain = null;
     }
     currentWordKey = '';
     currentSpeaking = null;
@@ -744,6 +667,7 @@ GPS|نظام تحديد المواقع
     stopSpeech();
     currentAudio = new Audio(url.pathname);
     currentAudio.volume = Math.max(0, Math.min(1, Number(els.speechVolume.value) / 100));
+    currentAudio.playbackRate = Number(els.speechRate.value);
     const clip = currentAudio;
     setSpeaking(kind);
     clip.onended = () => { if (currentAudio === clip) { currentAudio = null; setSpeaking(null); } };
@@ -790,10 +714,13 @@ GPS|نظام تحديد المواقع
       ambient.master.gain.setTargetAtTime(level, ambient.context.currentTime, 0.25);
     }
     if (currentAudio) currentAudio.volume = Number(els.speechVolume.value) / 100;
-    if (currentWordGain) currentWordGain.gain.value = Number(els.speechVolume.value) / 100;
-    if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
-      // Current utterances cannot change volume mid-sentence; the next one will use this setting.
-    }
+    // Web Speech applies the selected volume to the next utterance.
+  }
+  function updateRateLabel() {
+    const rate = Number(els.speechRate.value);
+    const label = rate < 0.9 ? 'بطيء' : rate > 1.1 ? 'سريع' : 'عادي';
+    els.speechRateLabel.textContent = `${label} · ${rate.toFixed(2).replace(/0$/, '')}×`;
+    if (currentAudio) currentAudio.playbackRate = rate;
   }
   function normalizeWord(word) { return word.toLowerCase().replace(/^[^a-z0-9]+|[^a-z0-9]+$/gi, '').replace(/[’]/g, "'"); }
   function localMeaning(word) {
@@ -906,6 +833,8 @@ GPS|نظام تحديد المواقع
     $('#practice').scrollIntoView({ behavior:'smooth', block:'start' });
   });
   els.speechVolume.addEventListener('input', updateVolumeLabels);
+  els.speechRate.addEventListener('input', updateRateLabel);
+  updateRateLabel();
   els.ambientVolume.addEventListener('input', updateVolumeLabels);
   els.ambientToggle.addEventListener('click', () => {
     if (els.ambientToggle.getAttribute('aria-checked') === 'true') stopAmbient(); else createAmbient();
@@ -916,12 +845,6 @@ GPS|نظام تحديد المواقع
   });
   $('#stopAll').addEventListener('click', () => { stopSpeech(); stopAmbient(); showToast('تم إيقاف الأصوات.'); });
   $('#pauseResume').addEventListener('click', () => {
-    if (currentWordSource && wordAudioContext) {
-      const button = $('#pauseResume');
-      if (wordAudioContext.state === 'suspended') wordAudioContext.resume().then(() => { button.textContent = 'Ⅱ'; }).catch(() => showToast('تعذر استئناف نطق الكلمة.'));
-      else wordAudioContext.suspend().then(() => { button.textContent = '▶'; }).catch(() => showToast('تعذر إيقاف نطق الكلمة مؤقتًا.'));
-      return;
-    }
     if (currentAudio) {
       const button = $('#pauseResume');
       if (currentAudio.paused) currentAudio.play().then(() => { button.textContent = 'Ⅱ'; }).catch(() => showToast('تعذر استئناف التسجيل.'));
@@ -962,5 +885,4 @@ GPS|نظام تحديد المواقع
   });
   window.addEventListener('appinstalled', () => showToast('أصبح التدريب متاحًا من جهازك.'));
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
-  window.addEventListener('load', warmWordAudio, { once: true });
 })();

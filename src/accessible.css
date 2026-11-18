@@ -168,6 +168,9 @@ body { background: var(--paper); color: var(--ink); font-size: 22px; font-weight
 .voice-meta strong { white-space: normal; font-size: 16px; color: #343950; font-weight: 900; }
 .voice-meta small { margin-top: 5px; font-size: 16px; color: #555c6f; font-weight: 900; }
 .voice-volume, .ambient-volume { font-size: 15px; color: #51596b; font-weight: 800; margin-top: 12px; }
+.voice-speed { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px 12px; margin-top: 12px; padding: 12px 13px; border: 1px solid #e7d9c9; border-radius: 12px; background: #faf4ec; color: #3d4258; font-size: 17px; font-weight: 900; }
+.voice-speed span { color: #754a44; font-size: 15px; font-weight: 900; }
+.voice-speed input { grid-column: 1 / -1; width: 100%; min-height: 28px; accent-color: #bf704b; cursor: pointer; }
 .voice-volume span, .ambient-volume span { font-size: 14px; color: #72493d; font-weight: 900; }
 .voice-volume input, .ambient-volume input { height: 6px; accent-color: #bf704b; }
 .ambient-row { border-color: #eee5da; padding-top: 14px; }
