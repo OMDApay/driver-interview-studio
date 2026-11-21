@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mihwar-driver-offline-v14';
+const CACHE_NAME = 'interview-studio-offline-v15';
 const HERO_IMAGE = '/hero-image.webp';
 const AUDIO_PATHS = Array.from({ length: 33 }, (_, i) => {
   const number = String(i + 1).padStart(2, '0');
@@ -10,13 +10,17 @@ const APP_SHELL = [
   '/manifest.webmanifest',
   '/manus-routes.json',
   '/brand-mark.svg',
-  '/src/style.css?v=14',
-  '/src/accessible.css?v=14',
+  '/icon-192.png',
+  '/icon-512.png',
+  '/icon-maskable-512.png',
+  '/src/style.css?v=15',
+  '/src/accessible.css?v=15',
   '/src/content.js',
   '/src/offline-dictionary.js',
-  '/src/arabic-pronunciation.js',
+  '/src/arabic-pronunciation.js?v=15',
+  '/src/arabic-pronunciation-data.js?v=15',
   '/src/interview-audio.js',
-  '/src/app.js?v=14',
+  '/src/app.js?v=15',
   HERO_IMAGE,
   ...AUDIO_PATHS
 ];

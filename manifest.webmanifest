@@ -1,9 +1,9 @@
 {
-  "name": "مِحور | استوديو مقابلة السائق",
-  "short_name": "مِحور",
-  "description": "تدريب على مقابلة السائق باللغة الإنجليزية مع أسئلة وإجابات وصوت ومعجم عربي.",
-  "lang": "ar",
-  "dir": "rtl",
+  "name": "Interview Studio",
+  "short_name": "Interview Studio",
+  "description": "English driver interview practice with spoken questions, answers, and an Arabic word guide.",
+  "lang": "en",
+  "dir": "ltr",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -11,10 +11,22 @@
   "theme_color": "#121a34",
   "icons": [
     {
-      "src": "/brand-mark.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

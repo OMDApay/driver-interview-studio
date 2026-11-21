@@ -1,10 +1,12 @@
 /* Arabic-script pronunciation hints for the English interview vocabulary. */
 (() => {
   const overrides = {
-    car: 'كار', cars: 'كارز', driver: 'درايفر', drivers: 'درايفرز', drive: 'درايف', driving: 'درايفينغ',
+    car: 'كار', cars: 'كارز', driver: 'درايفر', drivers: 'درايفرز', drive: 'درايف', driving: 'درايڤِنغ',
     vehicle: 'ڤيكل', vehicles: 'ڤيكلز', safety: 'سيفتي', safe: 'سيف', safely: 'سيفلي', route: 'روت',
     embassy: 'إمبَسي', embassies: 'إمبَسيز', interview: 'إنترفيو', interviewer: 'إنترفيوَر',
     question: 'كويستشن', answer: 'آنسر', licence: 'لايسنس', license: 'لايسنس', professional: 'بروفِشنَل',
+    usual: 'يوجوال', cause: 'كوز', could: 'كُد', ensure: 'إنشور', each: 'إيتش', fuel: 'فيول',
+    equipment: 'إكْوِپمَنت', visible: 'ڤِزَبُل', procedure: 'پْرَسيدجَر',
     professionally: 'بروفِشنَلي', confidential: 'كونفِدِنشَل', confidentiality: 'كونفِدِنشاليتي',
     armoured: 'آرمَرد', armored: 'آرمَرد', passenger: 'باسِنجر', passengers: 'باسِنجرز',
     appointment: 'أبوينتمِنت', congested: 'كونجِستِد', traffic: 'ترافِك', punctuality: 'بانكتشواليتي',
@@ -27,6 +29,8 @@
     const key = String(word || '').toLowerCase().replace(/[^a-z0-9]/g, '');
     if (!key) return '';
     if (overrides[key]) return overrides[key];
+    const dictionary = window.ARABIC_PRONUNCIATION_DATA || {};
+    if (dictionary[key]) return dictionary[key];
     let result = key.replace(/[0-9]+/g, digits => digits.split('').join(' '));
     for (const [pattern, replacement] of groups) result = result.replace(pattern, replacement);
     result = result.replace(/[a-z]/g, letter => letters[letter] || letter);
