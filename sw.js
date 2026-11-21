@@ -1,4 +1,4 @@
-const CACHE_NAME = 'interview-studio-offline-v15';
+const CACHE_NAME = 'interview-studio-offline-v16';
 const HERO_IMAGE = '/hero-image.webp';
 const AUDIO_PATHS = Array.from({ length: 33 }, (_, i) => {
   const number = String(i + 1).padStart(2, '0');
@@ -13,14 +13,17 @@ const APP_SHELL = [
   '/icon-192.png',
   '/icon-512.png',
   '/icon-maskable-512.png',
-  '/src/style.css?v=15',
-  '/src/accessible.css?v=15',
+  '/icon-192.png',
+  '/icon-512.png',
+  '/icon-maskable-512.png',
+  '/src/style.css?v=16',
+  '/src/accessible.css?v=16',
   '/src/content.js',
   '/src/offline-dictionary.js',
-  '/src/arabic-pronunciation.js?v=15',
-  '/src/arabic-pronunciation-data.js?v=15',
+  '/src/arabic-pronunciation.js?v=16',
+  '/src/arabic-pronunciation-data.js?v=16',
   '/src/interview-audio.js',
-  '/src/app.js?v=15',
+  '/src/app.js?v=16',
   HERO_IMAGE,
   ...AUDIO_PATHS
 ];
@@ -36,7 +39,7 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(key => key.startsWith('mihwar-driver-') && key !== CACHE_NAME).map(key => caches.delete(key))))
+      .then(keys => Promise.all(keys.filter(key => (key.startsWith('mihwar-driver-') || key.startsWith('interview-studio-offline-')) && key !== CACHE_NAME).map(key => caches.delete(key))))
       .then(() => self.clients.claim())
   );
 });

@@ -28,9 +28,9 @@
   window.arabicPronunciation = function(word) {
     const key = String(word || '').toLowerCase().replace(/[^a-z0-9]/g, '');
     if (!key) return '';
-    if (overrides[key]) return overrides[key];
     const dictionary = window.ARABIC_PRONUNCIATION_DATA || {};
     if (dictionary[key]) return dictionary[key];
+    if (overrides[key]) return overrides[key];
     let result = key.replace(/[0-9]+/g, digits => digits.split('').join(' '));
     for (const [pattern, replacement] of groups) result = result.replace(pattern, replacement);
     result = result.replace(/[a-z]/g, letter => letters[letter] || letter);
