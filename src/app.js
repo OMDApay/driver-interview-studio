@@ -884,5 +884,5 @@ GPS|نظام تحديد المواقع
     installPromptEvent = null;
   });
   window.addEventListener('appinstalled', () => showToast('أصبح التدريب متاحًا من جهازك.'));
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
 })();

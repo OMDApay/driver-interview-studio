@@ -13,7 +13,7 @@
   --soft: #f0e9df;
   --accent: #bf704b;
   --shadow: 0 20px 60px rgba(20, 26, 52, .12);
-  --hero-image: url('/hero-image.webp?v=13');
+  --hero-image: url('../hero-image.webp?v=13');
 }
 
 body { background: var(--paper); color: var(--ink); font-size: 22px; font-weight: 800; }

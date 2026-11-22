@@ -1,32 +1,19 @@
-const CACHE_NAME = 'interview-studio-offline-v16';
-const HERO_IMAGE = '/hero-image.webp';
+const CACHE_NAME = 'interview-studio-offline-v17';
+const APP_BASE = new URL('.', self.registration.scope);
+const asset = path => new URL(path.replace(/^\/+/, ''), APP_BASE).href;
+const HERO_IMAGE = asset('/hero-image.webp');
 const AUDIO_PATHS = Array.from({ length: 33 }, (_, i) => {
   const number = String(i + 1).padStart(2, '0');
-  return [`/audio/question-${number}.mp3`, `/audio/answer-${number}.mp3`];
+  return [asset(`/audio/question-${number}.mp3`), asset(`/audio/answer-${number}.mp3`)];
 }).flat();
 const APP_SHELL = [
-  '/',
-  '/index.html',
-  '/manifest.webmanifest',
-  '/manus-routes.json',
-  '/brand-mark.svg',
-  '/icon-192.png',
-  '/icon-512.png',
-  '/icon-maskable-512.png',
-  '/icon-192.png',
-  '/icon-512.png',
-  '/icon-maskable-512.png',
-  '/src/style.css?v=16',
-  '/src/accessible.css?v=16',
-  '/src/content.js',
-  '/src/offline-dictionary.js',
-  '/src/arabic-pronunciation.js?v=16',
-  '/src/arabic-pronunciation-data.js?v=16',
-  '/src/interview-audio.js',
-  '/src/app.js?v=16',
-  HERO_IMAGE,
-  ...AUDIO_PATHS
-];
+  '/', '/index.html', '/manifest.webmanifest', '/manus-routes.json', '/brand-mark.svg',
+  '/icon-192.png', '/icon-512.png', '/icon-maskable-512.png',
+  '/src/style.css?v=17', '/src/accessible.css?v=17', '/src/content.js',
+  '/src/offline-dictionary.js', '/src/arabic-pronunciation.js?v=17',
+  '/src/arabic-pronunciation-data.js?v=17', '/src/interview-audio.js',
+  '/src/word-audio-map.js', '/src/app.js?v=17', '/hero-image.webp',
+].map(asset).concat(AUDIO_PATHS);
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -49,7 +36,7 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;
 
-  if (url.pathname === HERO_IMAGE) {
+  if (url.pathname === new URL(HERO_IMAGE).pathname) {
     event.respondWith((async () => {
       const cache = await caches.open(CACHE_NAME);
       try {
@@ -74,7 +61,7 @@ self.addEventListener('fetch', event => {
       }
       return response;
     } catch (_) {
-      if (request.mode === 'navigate') return await caches.match('/index.html');
+      if (request.mode === 'navigate') return await caches.match(asset('/index.html'));
       return new Response('', { status: 503, statusText: 'Offline asset unavailable' });
     }
   })());
